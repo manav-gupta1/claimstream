@@ -1,5 +1,3 @@
-"""Data module for ClaimStream.
+from app.data.mock_data import MOCK_CASES, get_mock_case, list_mock_cases
 
-This package will contain synthetic FHIR / EHR dataset loaders,
-sample TPA insurance clarification queries, and clinical guidelines.
-"""
+__all__ = ["MOCK_CASES", "get_mock_case", "list_mock_cases"]
