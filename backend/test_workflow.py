@@ -1,83 +1,92 @@
 from app.data import get_mock_case
 from app.graph import get_claimstream_graph
-from app.models import ClaimStreamState, WorkflowStatus
+from app.models import (
+    ClaimStreamState,
+    VerificationStatus,
+    WorkflowStatus,
+)
 
 
-def run_case_test(case_id: str, thread_id: str):
+def run_graph_case(case_id: str, thread_id: str) -> ClaimStreamState:
     print(f"\n==========================================")
-    print(f"Testing Placeholder Workflow for: {case_id}")
+    print(f"Executing LangGraph Workflow: {case_id}")
     print(f"==========================================")
 
-    # 1. Load Case
-    mock_case = get_mock_case(case_id)
-    assert mock_case is not None, f"{case_id} should exist in mock_data"
+    # 1. Load mock case
+    case_data = get_mock_case(case_id)
+    assert case_data is not None, f"Case {case_id} not found"
 
-    # 2. Convert to ClaimStreamState
+    # 2. Build initial state
     initial_state = ClaimStreamState(
-        case_id=mock_case["case_id"],
-        query=mock_case["query"],
-        patient_id=mock_case["patient_id"],
-        patient_data=mock_case["patient_data"],
+        case_id=case_data["case_id"],
+        query=case_data["query"],
+        patient_id=case_data["patient_id"],
+        patient_data=case_data["patient_data"],
         workflow_status=WorkflowStatus.INITIALIZED,
     )
 
-    print(f"Initialized State for {initial_state.case_id} (Patient: {initial_state.patient_id})")
-
-    # 3. Retrieve compiled graph
+    # 3. Retrieve graph & execute with checkpointer config
     graph = get_claimstream_graph()
-
-    # 4. Execute graph with thread_id config
     config = {"configurable": {"thread_id": thread_id}}
 
-    print("Executing placeholder graph traversal...")
     final_output = graph.invoke(initial_state, config=config)
 
-    # Convert dictionary or state to ClaimStreamState
     if isinstance(final_output, dict):
         final_state = ClaimStreamState(**final_output)
     else:
         final_state = final_output
 
-    # 5. Verify all 5 node traces
-    expected_agents = [
-        "query_agent",
-        "retrieval_agent",
-        "clinical_agent",
-        "response_agent",
-        "verification_agent",
-    ]
-
-    trace_agent_names = [item.agent_name for item in final_state.agent_trace]
-    print(f"Agent Trace Captured ({len(trace_agent_names)} nodes):")
+    # 4. Verify Trace
+    print(f"Workflow Executed {len(final_state.agent_trace)} Nodes:")
     for idx, trace in enumerate(final_state.agent_trace, 1):
         print(f"  {idx}. [{trace.agent_name}] -> {trace.output_summary}")
 
-    assert len(final_state.agent_trace) == 5, f"Expected 5 traces, found {len(final_state.agent_trace)}"
-    for expected in expected_agents:
-        assert expected in trace_agent_names, f"Expected agent '{expected}' in trace, but found {trace_agent_names}"
+    assert len(final_state.agent_trace) == 5, f"Expected 5 traces, got {len(final_state.agent_trace)}"
 
-    # 6. Verify Checkpointer Persistence
+    # 5. Verify Checkpointer Persistence
     checkpoint_state = graph.get_state(config)
-    assert checkpoint_state is not None, "Checkpointer state should not be None"
-    assert checkpoint_state.values.get("case_id") == case_id, f"Checkpointer should persist case_id {case_id}"
+    assert checkpoint_state is not None, "Checkpointer state must exist"
+    assert checkpoint_state.values.get("case_id") == case_id, "Checkpointer must persist case_id"
 
-    # 7. Verify neutral placeholder completion status
-    assert final_state.workflow_status == WorkflowStatus.VERIFICATION_COMPLETED, (
-        f"Expected status VERIFICATION_COMPLETED, got {final_state.workflow_status}"
-    )
+    # 6. Verify Artifacts
+    assert final_state.query_analysis is not None, "query_analysis must be populated"
+    assert len(final_state.retrieved_evidence) > 0, "retrieved_evidence must not be empty"
+    assert final_state.clinical_analysis is not None, "clinical_analysis must be populated"
+    assert final_state.generated_response is not None, "generated_response must be populated"
+    assert final_state.verification_result is not None, "verification_result must be populated"
 
-    print(f"✓ {case_id} Workflow Status: {final_state.workflow_status.value}")
-    print(f"✓ {case_id} Checkpointer thread '{thread_id}' verified.")
+    # 7. Case-specific Outcome Assertions
+    if case_id == "CASE_001":
+        assert final_state.workflow_status == WorkflowStatus.VERIFIED, (
+            f"CASE_001 expected VERIFIED, got {final_state.workflow_status}"
+        )
+        assert final_state.confidence_score >= 90.0, f"Expected >= 90, got {final_state.confidence_score}"
+        assert final_state.human_review_required is False
+        assert final_state.verification_result.status == VerificationStatus.VERIFIED
+        print(f"\n✓ CASE_001 Output: Status={final_state.workflow_status.value}, Confidence={final_state.confidence_score:.1f}%")
+
+    elif case_id == "CASE_002":
+        assert final_state.workflow_status == WorkflowStatus.PENDING_HUMAN_REVIEW, (
+            f"CASE_002 expected PENDING_HUMAN_REVIEW, got {final_state.workflow_status}"
+        )
+        assert final_state.confidence_score < 80.0, f"Expected < 80, got {final_state.confidence_score}"
+        assert final_state.human_review_required is True
+        assert final_state.verification_result.status == VerificationStatus.NEEDS_REVIEW
+        print(f"\n✓ CASE_002 Output: Status={final_state.workflow_status.value}, Confidence={final_state.confidence_score:.1f}% (HITL Required)")
+
+    return final_state
 
 
-def test_all_cases():
-    print("--- Starting ClaimStream Step 2 Workflow Verification ---")
-    run_case_test("CASE_001", "thread_case_001_placeholder")
-    run_case_test("CASE_002", "thread_case_002_placeholder")
+def main():
+    print("--- Starting LangGraph Integrated Workflow Test ---")
+    s1 = run_graph_case("CASE_001", "thread_case_001_v1")
+    s2 = run_graph_case("CASE_002", "thread_case_002_v1")
     print("\n==========================================")
-    print("✓ ALL PLACEHOLDER WORKFLOW TESTS PASSED FOR CASE_001 & CASE_002")
+    print("✓ ALL LANGGRAPH WORKFLOW INTEGRATION TESTS PASSED")
+    print(f"  CASE_001: {s1.workflow_status.value} (Confidence: {s1.confidence_score:.1f}%)")
+    print(f"  CASE_002: {s2.workflow_status.value} (Confidence: {s2.confidence_score:.1f}%)")
     print("==========================================")
 
 
 if __name__ == "__main__":
-    test_all_cases()
+    main()

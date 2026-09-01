@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
@@ -72,7 +72,9 @@ class VerificationResult(BaseModel):
 class AgentTraceItem(BaseModel):
     agent_name: str = Field(..., description="Name of agent executing node")
     action: str = Field(..., description="Description of action performed")
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), description="Execution timestamp")
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(), description="Execution timestamp"
+    )
     output_summary: str = Field(..., description="Brief summary of agent output")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Structured agent payload")
 
@@ -81,7 +83,7 @@ class HumanDecision(BaseModel):
     decision: HumanDecisionType = Field(..., description="APPROVE, REQUEST_MODIFICATION, or ESCALATE")
     reviewer_notes: Optional[str] = Field(None, description="Notes or modifications requested by reviewer")
     reviewer_id: Optional[str] = Field("dr_reviewer_1", description="Reviewer identifier")
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class ClaimStreamState(BaseModel):
@@ -106,5 +108,5 @@ class ClaimStreamState(BaseModel):
     # Audit & Diagnostics
     agent_trace: List[AgentTraceItem] = Field(default_factory=list)
     errors: List[str] = Field(default_factory=list)
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
