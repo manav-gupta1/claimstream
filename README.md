@@ -1,190 +1,99 @@
-# ClaimStream 🏥⚡
+# ClaimStream
 
-> **AI-Powered Multi-Agent Clinical Clarification Desk**
-> Empowering hospitals and healthcare providers to swiftly, accurately, and compliantly resolve TPA & insurance clarification queries.
+**Hackathon foundation for a clinical clarification workflow**
 
----
+ClaimStream explores how a hospital team could organize responses to TPA and insurance clarification requests. The intended workflow is to parse a query, retrieve relevant clinical evidence, compare it with policy requirements, and prepare a draft for qualified human review.
 
-## 📖 Overview
+> **Current status:** the checked-in application is an early project scaffold. The current backend exposes service metadata and a health endpoint. Agent, graph, model, and data packages are placeholders; the multi-agent workflow described below is planned, not implemented.
 
-When healthcare providers submit claims to Third-Party Administrators (TPAs) and health insurers, claims frequently get flagged for clarification regarding medical necessity, missing documentation, or clinical discrepancies. 
+## Current implementation
 
-**ClaimStream** is a multi-agent AI system designed to:
-1. Ingest and parse TPA/insurer clarification queries.
-2. Cross-reference query requirements against patient EHR/FHIR clinical records.
-3. Align findings with clinical policy guidelines.
-4. Synthesize comprehensive, compliant draft clarification response packages for human-in-the-loop clinical review.
+- Next.js App Router frontend with a backend health-status view.
+- FastAPI backend with `/` and `/health` endpoints.
+- Configurable CORS origins through `CORS_ORIGINS`.
+- Initial project structure for future agents, workflow orchestration, Pydantic models, and synthetic clinical data.
 
----
+## Planned workflow
 
-## 🛠️ Tech Stack
+```text
+TPA / Insurance Clarification
+             |
+             v
+       Query Parsing
+             |
+             v
+      Workflow Orchestrator
+        /           \
+       v             v
+Clinical Record    Policy / Guideline
+ Retrieval          Matching
+       \             /
+        v           v
+        Evidence Aggregation
+                 |
+                 v
+       Draft Response Synthesis
+                 |
+                 v
+       Qualified Human Review
+```
 
-### Frontend
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Linting**: ESLint
+This workflow is a design target. LangGraph, an LLM provider, FHIR/EHR retrieval, and persistent storage are listed as future integrations rather than current capabilities.
+
+## Tech stack
+
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS.
+- **Backend:** Python, FastAPI, Uvicorn.
+- **Planned:** LangGraph, an LLM provider, synthetic FHIR resources, and a database.
+
+## Repository layout
+
+- `frontend/`: Next.js application.
+- `backend/app/main.py`: FastAPI application and health endpoint.
+- `backend/app/agents/`: placeholder for specialized agents.
+- `backend/app/graph/`: placeholder for workflow orchestration.
+- `backend/app/models/`: placeholder for schemas and data models.
+- `backend/app/data/`: placeholder for synthetic clinical data.
+- `docs/ARCHITECTURE.md`: intended architecture.
+
+## Run locally
 
 ### Backend
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Runtime / Server**: Python 3.10+ / [Uvicorn](https://www.uvicorn.org/)
-- **Data Validation**: Pydantic
-
-### Future Integrations (Hackathon Roadmap)
-- **Agent Orchestration**: [LangGraph](https://github.com/langchain-ai/langgraph)
-- **LLM**: Gemini API
-- **Data**: Synthetic FHIR/EHR JSON datasets
-- **Database**: SQLite (MVP)
-
----
-
-## 📁 Project Structure
-
-```
-ClaimStream/
-├── frontend/                     # Next.js TypeScript + Tailwind frontend
-│   ├── src/
-│   │   └── app/                  # Next.js App Router (pages, layout, components)
-│   ├── public/                   # Static assets
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── .env.example
-│   └── Dockerfile
-├── backend/                      # FastAPI Python backend
-│   ├── app/
-│   │   ├── main.py               # FastAPI application & /health endpoint
-│   │   ├── agents/               # Clinical clarification agents
-│   │   ├── graph/                # LangGraph workflow orchestration
-│   │   ├── models/               # Pydantic schemas & data models
-│   │   └── data/                 # Synthetic FHIR/EHR patient data & queries
-│   ├── requirements.txt          # Python dependencies
-│   ├── .env.example              # Backend environment template
-│   └── Dockerfile
-├── docs/                         # Project & architecture documentation
-│   └── ARCHITECTURE.md
-├── docker-compose.yml            # Multi-service container setup
-├── .gitignore                    # Git ignore configuration
-└── README.md                     # Project documentation
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Node.js**: `v18.0.0+` (or `v20+`)
-- **npm**: `v9+`
-- **Python**: `3.10+` (Python `3.12` recommended)
-- **Docker & Docker Compose** *(Optional, for containerized run)*
-
----
-
-### 1. Backend Setup
-
-1. **Navigate to the backend directory**:
-   ```bash
-   cd backend
-   ```
-
-2. **Create and activate a virtual environment**:
-   ```bash
-   # On macOS / Linux:
-   python3 -m venv .venv
-   source .venv/bin/activate
-
-   # On Windows (PowerShell):
-   # python -m venv .venv
-   # .venv\Scripts\Activate.ps1
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**:
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Run the FastAPI server**:
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-6. **Verify Backend**:
-   - **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
-   - **Interactive API Docs (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-### 2. Frontend Setup
-
-1. **Navigate to the frontend directory**:
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**:
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. **Run the development server**:
-   ```bash
-   npm run dev
-   ```
-
-5. **Access the application**:
-   - Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-### 3. Running with Docker Compose (Alternative)
-
-To spin up both backend and frontend concurrently:
 
 ```bash
-docker compose up --build
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-- **Frontend**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:8000](http://localhost:8000)
-- **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+The health endpoint is available at `http://localhost:8000/health`.
 
----
-
-## 🧪 Verification & Health Check
-
-You can verify the backend status at any time via curl:
+### Frontend
 
 ```bash
-curl http://localhost:8000/health
+cd frontend
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 ```
 
-Expected Response:
-```json
-{
-  "status": "healthy",
-  "service": "ClaimStream API"
-}
-```
+Open `http://localhost:3000`. The frontend currently checks backend health; it is not yet a clinical clarification dashboard.
 
----
+## Safety and scope
 
-## 👥 Hackathon Team Collaboration Guidelines
+This project is not a clinical decision-support system and must not be used with real patient information. Any future clinical workflow must use synthetic data during development, enforce access controls and audit logging, cite source records, protect sensitive data, and require qualified human review. Generated text must never be represented as a verified clinical conclusion.
 
-1. **Branching Strategy**: 
-   - `main`: Stable releases.
-   - `feature/<feature-name>`: Active feature branches.
-2. **Environment Variables**: Never commit `.env` or `.env.local` files. Add new configuration keys to `.env.example`.
-3. **Backend Modularity**:
-   - Place agent logic inside `backend/app/agents/`.
-   - Place LangGraph state and workflows inside `backend/app/graph/`.
-   - Place Pydantic models inside `backend/app/models/`.
-   - Place synthetic sample data inside `backend/app/data/`.
+## Roadmap
+
+- [ ] Define typed request, claim, evidence, and response schemas.
+- [ ] Build a query parser with deterministic validation.
+- [ ] Add synthetic FHIR/EHR fixtures and evidence retrieval.
+- [ ] Implement a workflow graph with traceable state transitions.
+- [ ] Add policy matching with explicit source citations.
+- [ ] Add a draft response interface with mandatory human approval.
+- [ ] Add persistence, authentication, audit logging, and tests.
+
+## License
+
+No license has been added yet. All rights reserved unless and until a license is specified.
